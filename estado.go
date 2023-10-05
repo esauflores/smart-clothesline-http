@@ -50,7 +50,7 @@ func patchEstado(c *gin.Context, db *gorm.DB) {
 	}
 
 	c.JSON(200, gin.H{
-		"exito": "Llamada exitosa: " + string(out),
+		"exito": "Llamada exitosa",
 	})
 
 }
