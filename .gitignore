@@ -5,5 +5,5 @@
 *.log
 
 # Ignore production build files Linux and windows
-smart-clothesline-http.exe
-smart-clothesline-http    
+*.exe
+*.so
