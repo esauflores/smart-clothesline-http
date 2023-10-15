@@ -4,65 +4,81 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"smart-clothesline-http/database"
+	"smart-clothesline-http/helpers"
 	"smart-clothesline-http/models"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-const MODO_AUTO = "0"
-const MODO_MANUAL = "1"
-
-const ESTADO_AFUERA = "0"
-const ESTADO_ADENTRO = "1"
-
 func GetTendederos(c *gin.Context) {
-	// Database handling
-	if database.Connection == nil {
-		database.Init()
-		if database.Connection == nil {
-			Fatal(http.StatusInternalServerError, errors.New("no se pudo conectar con la bd"))
-		}
-	}
-
-	// Query handling
+	// Variable declaration
 	var tendederos []models.Tendedero
 
-	result := database.Connection.Find(&tendederos)
-	CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
+	// Query handling
+	helpers.OpenDBConnection()
 
+	result := helpers.DB.Find(&tendederos)
+	helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
+
+	helpers.CloseDBConnection()
+
+	// Response handling
 	c.JSON(http.StatusOK, tendederos)
+}
+
+func GetTendedero(c *gin.Context) {
+	// Variable declaration
+	var tendedero models.Tendedero
+
+	// Param handling
+	device_id, err := helpers.GetURLParam(c, "device_id")
+	helpers.CheckFatal(err, http.StatusBadRequest, err)
+
+	// Query handling
+	helpers.OpenDBConnection()
+
+	result := helpers.DB.Where("id = ?", device_id).First(&tendedero)
+	helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
+
+	helpers.CloseDBConnection()
+
+	// Response handling
+	c.JSON(http.StatusOK, tendedero)
 }
 
 func PatchTendedero(c *gin.Context) {
 	// Param handling
-	modo, err := GetParam(c, "modo")
-	CheckFatal(err, http.StatusBadRequest, errors.New("no se pudo obtener el modo"))
+	modo, err := helpers.GetURLParam(c, "modo")
+	helpers.CheckFatal(err, http.StatusBadRequest, err)
 
+	estado, err := helpers.GetURLParam(c, "estado")
+	helpers.CheckFatal(err, http.StatusBadRequest, err)
+
+	// Validation
 	if modo != MODO_AUTO && modo != MODO_MANUAL {
-		Fatal(http.StatusBadRequest, errors.New("el modo debe ser manual o automatico"))
+		helpers.Fatal(http.StatusBadRequest, errors.New("modo invalido"))
 	}
 
-	estado, err := GetParam(c, "estado")
-	CheckFatal(err, http.StatusBadRequest, errors.New("no se pudo obtener el estado"))
-
 	if estado != ESTADO_AFUERA && estado != ESTADO_ADENTRO {
-		Fatal(http.StatusBadRequest, errors.New("el estado debe ser adentro o afuera"))
+		helpers.Fatal(http.StatusBadRequest, errors.New("estado invalido"))
 	}
 
 	// File handling
-	const devicePath = "/dev/ttyACM0"
-	file, err := os.OpenFile(devicePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	CheckFatal(err, http.StatusInternalServerError, errors.New("no se pudo abrir el puerto serial"))
-	defer file.Close()
+	modo_int, _ := strconv.Atoi(modo)
+	estado_int, _ := strconv.Atoi(estado)
 
-	text := modo + "," + estado
-	_, err = file.WriteString(text)
-	CheckFatal(err, http.StatusInternalServerError, errors.New("no se pudo escribir en el puerto serial"))
+	message := strconv.Itoa(modo_int*2 + estado_int)
+	helpers.WriteToFile(os.Getenv("DEVICE_PATH"), message)
 
 	// Query handling
-	result := database.Connection.Model(&models.Tendedero{}).Where("id = ?", os.Getenv("DEVICEID")).Update("estado", estado).Update("modo", modo)
-	CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo actualizar el tendedero"))
+	helpers.OpenDBConnection()
 
+	result := helpers.DB.Model(&models.Tendedero{}).Where("id = ?", os.Getenv("DEVICE_ID")).Update("estado", estado).Update("modo", modo)
+	helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo actualizar el tendedero"))
+
+	helpers.CloseDBConnection()
+
+	// Response handling
 	c.JSON(http.StatusOK, gin.H{"mensaje": "Actualizado exitoso"})
 }
