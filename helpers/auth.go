@@ -2,10 +2,12 @@ package helpers
 
 import (
 	"errors"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
 func CreateJWT() (string, error) {
@@ -32,8 +34,30 @@ func ValidateJWT(tokenString string) (*jwt.Token, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errors.New("no se pudo validar el token")
 	}
 
 	return token, nil
+}
+
+func AuthCheck() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get bearer token
+		authHeader := c.GetHeader("Authorization")
+
+		// Check if not contains Bearer
+
+		if len(authHeader) < len("Bearer ") {
+			Fatal(http.StatusUnauthorized, errors.New("no se ha encontrado el token"))
+		}
+
+		tokenString := authHeader[len("Bearer "):]
+
+		// Validate token
+		_, err := ValidateJWT(tokenString)
+		CheckFatal(err, http.StatusUnauthorized, err)
+
+		// Continue processing the request
+		c.Next()
+	}
 }
