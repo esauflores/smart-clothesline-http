@@ -10,11 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateJWT() (string, error) {
+func CreateJWT(m map[string]any) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["iat"] = time.Now().Unix()
+
+	for key, value := range m {
+		claims[key] = value
+	}
+
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 
 	if err != nil {
@@ -40,24 +46,37 @@ func ValidateJWT(tokenString string) (*jwt.Token, error) {
 	return token, nil
 }
 
+func GetClaims(token *jwt.Token) (jwt.MapClaims, error) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("no se pudo obtener los claims")
+	}
+
+	return claims, nil
+}
+
 func AuthCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get bearer token
 		authHeader := c.GetHeader("Authorization")
 
 		// Check if not contains Bearer
-
 		if len(authHeader) < len("Bearer ") {
 			Fatal(http.StatusUnauthorized, errors.New("no se ha encontrado el token"))
 		}
-
 		tokenString := authHeader[len("Bearer "):]
 
 		// Validate token
-		_, err := ValidateJWT(tokenString)
+		token, err := ValidateJWT(tokenString)
 		CheckFatal(err, http.StatusUnauthorized, err)
 
-		// Continue processing the request
+		// Get claims
+		data := token.Claims.(jwt.MapClaims)
+
+		// Set user id
+		c.Set("usuario_id", data["id"])
+
+		// Continue
 		c.Next()
 	}
 }

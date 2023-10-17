@@ -70,7 +70,7 @@ func Login() gin.HandlerFunc {
 		helpers.CheckFatal(err, http.StatusUnauthorized, errors.New("usuario o contraseña incorrecta"))
 
 		// Create JWT
-		tokenString, err := helpers.CreateJWT()
+		tokenString, err := helpers.CreateJWT(map[string]any{"id": usuario.Id})
 		helpers.CheckFatal(err, http.StatusInternalServerError, errors.New("no se pudo crear el token"))
 
 		// Response handling

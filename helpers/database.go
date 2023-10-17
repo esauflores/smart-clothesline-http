@@ -45,9 +45,9 @@ func CloseDBConnection() {
 
 func MigrateDB() {
 	OpenDBConnection()
+	defer CloseDBConnection()
 
 	DB.AutoMigrate(&models.Usuario{})
 	DB.AutoMigrate(&models.Tendedero{})
-
-	CloseDBConnection()
+	DB.AutoMigrate(&models.Evento{})
 }

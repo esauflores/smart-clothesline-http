@@ -7,6 +7,5 @@ type Usuario struct {
 	Email      string `json:"email" gorm:"uniqueIndex; not null; type:varchar(255)"`
 	Contrasena string `json:"contrasena" gorm:"not null; type:varchar(255)"`
 
-	// foreign key
 	Tendederos []Tendedero `json:"tendederos" gorm:"foreignKey:UsuarioId"`
 }

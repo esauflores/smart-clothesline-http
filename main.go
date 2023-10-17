@@ -2,6 +2,7 @@ package main
 
 import (
 	"smart-clothesline-http/handlers"
+	"smart-clothesline-http/helpers"
 
 	"github.com/joho/godotenv"
 )
@@ -9,6 +10,6 @@ import (
 func main() {
 	godotenv.Load()
 
-	// helpers.MigrateDB()
+	helpers.MigrateDB()
 	handlers.InitRouter()
 }

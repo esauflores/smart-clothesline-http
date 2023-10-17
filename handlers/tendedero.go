@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func GetTendederos() gin.HandlerFunc {
@@ -20,7 +22,7 @@ func GetTendederos() gin.HandlerFunc {
 		helpers.OpenDBConnection()
 		defer helpers.CloseDBConnection()
 
-		result := helpers.DB.Find(&tendederos)
+		result := helpers.DB.Where("usuario_id = ?", c.Keys["usuario_id"]).Find(&tendederos)
 		helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
 
 		// Response handling
@@ -41,7 +43,7 @@ func GetTendedero() gin.HandlerFunc {
 		helpers.OpenDBConnection()
 		defer helpers.CloseDBConnection()
 
-		result := helpers.DB.Where("id = ?", device_id).First(&tendedero)
+		result := helpers.DB.Where("usuario_id = ? AND id = ?", c.Keys["usuario_id"], device_id).First(&tendedero)
 		helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
 
 		// Response handling
@@ -52,6 +54,9 @@ func GetTendedero() gin.HandlerFunc {
 func PatchTendedero() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Param handling
+		device_id, err := helpers.GetURLParam(c, "device_id")
+		helpers.CheckFatal(err, http.StatusBadRequest, err)
+
 		modo, err := helpers.GetURLParam(c, "modo")
 		helpers.CheckFatal(err, http.StatusBadRequest, err)
 
@@ -78,7 +83,20 @@ func PatchTendedero() gin.HandlerFunc {
 		helpers.OpenDBConnection()
 		defer helpers.CloseDBConnection()
 
-		result := helpers.DB.Model(&models.Tendedero{}).Where("id = ?", os.Getenv("DEVICE_ID")).Update("estado", estado).Update("modo", modo)
+		var result *gorm.DB
+
+		// Create evento
+		result = helpers.DB.Create(&models.Evento{
+			Id:          uuid.New().String(),
+			Estado:      estado == ESTADO_AFUERA,
+			Modo:        modo == MODO_AUTO,
+			TendederoId: device_id,
+		})
+		helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo crear el evento"))
+
+		// Update the tendedero
+		data := map[string]any{"estado": estado == ESTADO_ADENTRO, "modo": modo == MODO_MANUAL}
+		result = helpers.DB.Model(&models.Tendedero{}).Where("usuario_id = ? AND id = ?", c.Keys["usuario_id"], device_id).Updates(data)
 		helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo actualizar el tendedero"))
 
 		// Response handling
