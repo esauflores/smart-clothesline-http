@@ -21,11 +21,19 @@ func InitRouter() {
 	router := gin.Default()
 	router.Use(HTTPRecoveryHandler())
 
-	// routes
+	// login routes
+	router.POST("/login", func(c *gin.Context) { Login(c) })
+	router.POST("/signup", func(c *gin.Context) { Signup(c) })
+
+	// tendedero routes
 	router.GET("/tendederos", func(c *gin.Context) { GetTendederos(c) })
 	router.GET("/tendedero/:device_id", func(c *gin.Context) { GetTendedero(c) })
 	router.PATCH("/tendedero/:device_id/:modo/:estado", func(c *gin.Context) { PatchTendedero(c) })
 
+	// usuario routes
+	router.GET("/usuarios", func(c *gin.Context) { GetUsuarios(c) })
+
+	// random id route
 	router.GET("/random_id", func(c *gin.Context) { uuid := uuid.New(); c.JSON(http.StatusOK, gin.H{"uuid": uuid.String()}) })
 
 	// Run the server

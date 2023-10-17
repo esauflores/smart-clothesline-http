@@ -17,11 +17,10 @@ func GetTendederos(c *gin.Context) {
 
 	// Query handling
 	helpers.OpenDBConnection()
+	defer helpers.CloseDBConnection()
 
 	result := helpers.DB.Find(&tendederos)
 	helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
-
-	helpers.CloseDBConnection()
 
 	// Response handling
 	c.JSON(http.StatusOK, tendederos)
@@ -37,11 +36,10 @@ func GetTendedero(c *gin.Context) {
 
 	// Query handling
 	helpers.OpenDBConnection()
+	defer helpers.CloseDBConnection()
 
 	result := helpers.DB.Where("id = ?", device_id).First(&tendedero)
 	helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
-
-	helpers.CloseDBConnection()
 
 	// Response handling
 	c.JSON(http.StatusOK, tendedero)
@@ -73,11 +71,10 @@ func PatchTendedero(c *gin.Context) {
 
 	// Query handling
 	helpers.OpenDBConnection()
+	defer helpers.CloseDBConnection()
 
 	result := helpers.DB.Model(&models.Tendedero{}).Where("id = ?", os.Getenv("DEVICE_ID")).Update("estado", estado).Update("modo", modo)
 	helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo actualizar el tendedero"))
-
-	helpers.CloseDBConnection()
 
 	// Response handling
 	c.JSON(http.StatusOK, gin.H{"mensaje": "Actualizado exitoso"})
