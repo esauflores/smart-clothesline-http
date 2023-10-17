@@ -88,8 +88,8 @@ func PatchTendedero() gin.HandlerFunc {
 		// Create evento
 		result = helpers.DB.Create(&models.Evento{
 			Id:          uuid.New().String(),
-			Estado:      estado == ESTADO_AFUERA,
-			Modo:        modo == MODO_AUTO,
+			Estado:      estado == ESTADO_ADENTRO,
+			Modo:        modo == MODO_MANUAL,
 			TendederoId: device_id,
 		})
 		helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo crear el evento"))
