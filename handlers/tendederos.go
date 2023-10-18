@@ -43,7 +43,7 @@ func GetTendedero() gin.HandlerFunc {
 		helpers.OpenDBConnection()
 		defer helpers.CloseDBConnection()
 
-		result := helpers.DB.Where("usuario_id = ? AND id = ?", c.Keys["usuario_id"], device_id).First(&tendedero)
+		result := helpers.DB.Preload("Eventos").Where("usuario_id = ? AND id = ?", c.Keys["usuario_id"], device_id).First(&tendedero)
 		helpers.CheckFatal(result.Error, http.StatusInternalServerError, errors.New("no se pudo obtener los tendederos"))
 
 		// Response handling
