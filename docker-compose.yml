@@ -1,0 +1,23 @@
+
+version: '3'
+services:
+  smart-clothesline-http:
+    container_name: smart-clothesline-http
+    image: golang:latest
+    volumes:
+      - /root/smart-clothesline-http:/go/src/app
+      - /dev/ttyACM0:/dev/ttyACM0
+    working_dir: /go/src/app
+    command: bash -c "go build && ./smart-clothesline-http"
+    ports:
+      - 8083:8080
+    networks:
+      - smart_clothesline
+    user: root
+    privileged: true
+    restart: always
+
+
+networks:
+  smart_clothesline:
+    external: true
